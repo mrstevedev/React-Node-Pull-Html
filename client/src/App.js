@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 import "./App.css";
 
 class App extends React.Component {
@@ -6,25 +6,22 @@ class App extends React.Component {
     super(props);
     this.state = {
       urls: [],
-      addedUrls: []
+      addedUrls: [],
+      val: 'Save to files'
     }
     console.log(this.state);
   }
 
   handleSubmit = (e) => {
     e.preventDefault();
-    console.log('handleSubmit Ran');
 
     const numSelected = document.querySelectorAll('.selected').length+1;
 
+    const addedUrls = this.state.addedUrls;
+
     if(numSelected < 10 ){
       const saveBtn = document.querySelector('.saveBtn');
-      const errorText = document.querySelector('.error-text');
-
-      const addedUrls = this.state.addedUrls;
-
-      // Get current url clicked
-      const currUrl = e.target.parentNode.childNodes[1].textContent;
+      const errorText = document.querySelector('.error-text');     
       
       saveBtn.setAttribute('disabled','true');
 
@@ -34,11 +31,16 @@ class App extends React.Component {
 
       this.setState({
         // add selected values to a new state array
-      })
+        addedUrls,
+        val: 'Saved!'
+      }, () => console.log('addedUrls in handleSubmit', this.state));
 
-      fetch('http://localhost:5001/api', {
+      fetch('http://localhost:3001/submit', {
         method: 'POST',
-        body: JSON.stringify({  })
+        body: JSON.stringify({ addedUrls: this.state.addedUrls }),
+        headers: {
+          'Content-type': 'application/json'
+        }
       });
     }
   }
@@ -47,26 +49,37 @@ class App extends React.Component {
     e.preventDefault();
     const url = document.querySelectorAll('.url');
     
+
     [].forEach.call(url, (el) => {
-      el.classList.remove('selected');            
+      el.classList.remove('selected');      
     });
+
+    const addedUrls = this.state.addedUrls;
+
+    // Get current url clicked
+    const currUrl = e.target.textContent;
+    
+    addedUrls.push(currUrl);
+
+    console.log(addedUrls);
     const numSelected = document.querySelectorAll('.selected').length+1;
 
-    if(numSelected >= 10) {
-      const saveBtn = document.querySelector('.saveBtn');
-      const errorText = document.querySelector('.error-text');
-      
-      saveBtn.removeAttribute('disabled');
-
-      errorText.innerHTML = '';
-    }
-
     this.setState({
-      numSelected
+      numSelected,
+      addedUrls
     }, () => console.log(this.state));
       e.target.classList.toggle('selected');
       if(e.target.classList.contains('selected')) {
-        const selectText = document.querySelectorAll('.selected-text');
+
+        if(numSelected >= 10) {
+          const saveBtn = document.querySelector('.saveBtn');
+          const errorText = document.querySelector('.error-text');
+          
+          saveBtn.removeAttribute('disabled');
+    
+          errorText.innerHTML = '';
+        }
+
         const last = e.target.lastChild;
         last.innerHTML = '<i class="fas fa-check"></i>';
       } else {
@@ -77,7 +90,7 @@ class App extends React.Component {
   }
 
   componentDidMount() {
-    fetch('http://localhost:5001/api')
+    fetch('http://localhost:3001/api', { method: 'GET', headers: { 'Origin': 'http://localhost:3001/' } })
       .then(res => res.json())
       .then(data => {
         this.setState({
@@ -88,13 +101,13 @@ class App extends React.Component {
   }
   
   render() {
-    const { urls, numSelected } = this.state;
+    const { urls, numSelected, val } = this.state;
     return (
       <div className="container">
         <header>
           <h3>Reactjs Application</h3>
         </header>
-        <form onSubmit={(e) => this.handleSubmit(e)} method="POST">
+        <form action="http://localhost:3001/submit" onSubmit={(e) => this.handleSubmit(e)} method="POST">
           <p>Select 10 websites to save.</p>
           <ul>
             {urls.map((url, index) => (
@@ -105,7 +118,7 @@ class App extends React.Component {
             ))}
           </ul>
           <p className="urls-selected">{numSelected ? `You have ${numSelected} url's selected` : null}</p>
-          <button className="btn saveBtn">Save to files</button>
+          <button className="btn saveBtn">{val}</button>
           <div className="error-container">
             <span className="error-text"></span>
           </div>
